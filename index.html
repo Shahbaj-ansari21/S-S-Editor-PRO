@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SS Book Editor PRO - MS Word Style</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <style>
+        :root { --ribbon-bg: #f3f4f6; --active-blue: #2b5797; --border: #d1d5db; }
+        body { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; background: #e5e7eb; }
+
+        /* Registration Screen */
+        #login-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95); display: flex; align-items: center; justify-content: center; z-index: 2000;
+        }
+        .login-box { padding: 40px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
+        .login-box input { display: block; width: 300px; padding: 12px; margin: 15px 0; border: 1px solid var(--border); border-radius: 4px; }
+        .login-box button { width: 100%; padding: 12px; background: var(--active-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        /* Ribbon Toolbar */
+        .ribbon { background: var(--ribbon-bg); padding: 5px 15px; border-bottom: 1px solid var(--border); display: flex; gap: 20px; align-items: center; flex-wrap: wrap; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .group { display: flex; flex-direction: column; align-items: center; border-right: 1px solid #ccc; padding-right: 15px; }
+        .group-label { font-size: 11px; color: #666; margin-top: 5px; text-transform: uppercase; }
+        .controls { display: flex; gap: 3px; align-items: center; }
+
+        button.tool-btn { padding: 6px 10px; border: 1px solid transparent; background: transparent; cursor: pointer; border-radius: 3px; font-size: 14px; }
+        button.tool-btn:hover { background: #e2e8f0; border-color: #cbd5e1; }
+        select { padding: 4px; border: 1px solid var(--border); border-radius: 3px; font-size: 13px; outline: none; }
+
+        /* Editor */
+        .editor-container { display: flex; flex-direction: column; align-items: center; padding: 30px 0; }
+        .page {
+            background: white; width: 210mm; min-height: 297mm; padding: 25mm;
+            margin-bottom: 30px; box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            outline: none; font-size: 16px; line-height: 1.5; word-wrap: break-word;
+        }
+
+        /* Status Bar */
+        .status-bar { position: fixed; bottom: 0; width: 100%; background: var(--active-blue); color: white; padding: 4px 20px; font-size: 12px; display: flex; justify-content: space-between; box-sizing: border-box; }
+
+        /* Config Icon */
+        .config-link { position: absolute; right: 10px; top: 10px; font-size: 12px; cursor: pointer; text-decoration: underline; color: #2b5797; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <h2 style="color:var(--active-blue)">SS Editor Registration</h2>
+        <input type="text" id="regName" placeholder="Full Name">
+        <input type="text" id="regContact" placeholder="Email / Phone">
+        <button onclick="registerUser()">Register & Enter</button>
+        <p style="font-size:10px; color:#888; margin-top:15px;">Data will be saved to your Google Sheet</p>
+    </div>
+</div>
+
+<div id="app" style="display:none;">
+    <div class="ribbon">
+        <div class="group">
+            <div class="controls">
+                <select id="fontList" onchange="execCmd('fontName', this.value)" style="width:130px;">
+                    <option value="Arial">Arial</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Impact">Impact</option>
+                    <option value="Trebuchet MS">Trebuchet MS</option>
+                    <option value="Comic Sans MS">Comic Sans MS</option>
+                    <option value="Lucida Console">Lucida Console</option>
+                    <option value="Tahoma">Tahoma</option>
+                    <option value="Palatino">Palatino</option>
+                    <option value="Garamond">Garamond</option>
+                    <option value="Bookman">Bookman</option>
+                    <option value="Avant Garde">Avant Garde</option>
+                    <option value="Copperplate">Copperplate</option>
+                    <option value="Brush Script MT">Brush Script</option>
+                </select>
+                <select onchange="execCmd('fontSize', this.value)">
+                    <option value="3">12pt</option>
+                    <option value="1">8pt</option>
+                    <option value="2">10pt</option>
+                    <option value="4">14pt</option>
+                    <option value="5">18pt</option>
+                    <option value="6">24pt</option>
+                    <option value="7">36pt</option>
+                </select>
+            </div>
+            <div class="controls" style="margin-top:5px;">
+                <button class="tool-btn" onclick="execCmd('bold')"><b>B</b></button>
+                <button class="tool-btn" onclick="execCmd('italic')"><i>I</i></button>
+                <button class="tool-btn" onclick="execCmd('underline')"><u>U</u></button>
+                <button class="tool-btn" onclick="execCmd('strikeThrough')"><s>abc</s></button>
+                <input type="color" onchange="execCmd('foreColor', this.value)" style="width:30px; border:none; height:25px; cursor:pointer;">
+            </div>
+            <span class="group-label">Font</span>
+        </div>
+
+        <div class="group">
+            <div class="controls">
+                <button class="tool-btn" onclick="execCmd('justifyLeft')">Left</button>
+                <button class="tool-btn" onclick="execCmd('justifyCenter')">Center</button>
+                <button class="tool-btn" onclick="execCmd('justifyRight')">Right</button>
+            </div>
+            <div class="controls" style="margin-top:5px;">
+                <button class="tool-btn" onclick="execCmd('insertUnorderedList')">• List</button>
+                <button class="tool-btn" onclick="execCmd('insertOrderedList')">1. List</button>
+            </div>
+            <span class="group-label">Paragraph</span>
+        </div>
+
+        <div class="group">
+            <button class="tool-btn" onclick="addPage()" style="color:green">+ New Page</button>
+            <button class="tool-btn" onclick="downloadPDF()" style="background:#d9534f; color:white; margin-top:5px;">Save as PDF</button>
+            <span class="group-label">File Tools</span>
+        </div><div class="config-link" onclick="setSheetURL()"></div>
+    </div>
+
+
+    <div class="editor-container" id="main-editor">
+        <div class="page" contenteditable="true" oninput="saveDraft()"></div>
+    </div>
+
+    <div class="status-bar">
+        <div id="stat-user">Ready</div>
+        <div id="stat-pages">Pages: 1</div>
+    </div>
+</div>
+
+<script>
+    let SHEET_URL = "https://script.google.com/macros/s/AKfycbwx1i31b0MCMQg0m445zLORynKJov4gm9yM5CxXsA7sWdq6KQ_jqb4AbLWWunHU5tYB/exec";
+
+    function setSheetURL() {
+        let url = prompt("https://script.google.com/macros/s/AKfycbwx1i31b0MCMQg0m445zLORynKJov4gm9yM5CxXsA7sWdq6KQ_jqb4AbLWWunHU5tYB/exec", SHEET_URL);
+        if(url) {
+            SHEET_URL = url;
+            localStorage.setItem("sheet_url", url);
+            alert("Sheet URL Saved!");
+        }
+    }
+
+    function registerUser() {
+        const name = document.getElementById('regName').value;
+        const contact = document.getElementById('regContact').value;
+
+        if(!name || !contact) return alert("Please enter details");
+        if(!SHEET_URL) return alert("Please configure Google Sheet URL first (Click Gear Icon)");
+
+        // Send to Google Sheet
+        fetch(SHEET_URL, {
+            method: "POST",
+            mode: "no-cors",
+            body: JSON.stringify({ name: name, contact: contact, type: "registration" })
+        });
+
+        localStorage.setItem("ss_user", name);
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('stat-user').innerText = "User: " + name;
+    }
+
+    function execCmd(cmd, val=null) {
+        document.execCommand(cmd, false, val);
+    }
+
+    function addPage() {
+        const div = document.createElement('div');
+        div.className = 'page';
+        div.contentEditable = 'true';
+        document.getElementById('main-editor').appendChild(div);
+        updatePageCount();
+    }
+
+    function updatePageCount() {
+        const count = document.querySelectorAll('.page').length;
+        document.getElementById('stat-pages').innerText = "Pages: " + count;
+    }
+
+    async function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const pages = document.querySelectorAll('.page');
+
+        for (let i = 0; i < pages.length; i++) {
+            const canvas = await html2canvas(pages[i], { scale: 2 });
+            if (i > 0) doc.addPage();
+            doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, 297);
+        }
+        doc.save("SS-Document.pdf");
+    }
+</script>
+</body>
+</html>
