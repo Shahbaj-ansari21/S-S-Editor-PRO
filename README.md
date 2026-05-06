@@ -1,4 +1,4 @@
-# SS Book Editor PRO 📝
+# SS Editor PRO 📝
 
 SS Book Editor PRO ek powerful aur lightweight web-based text editor hai jo aapko Microsoft Word jaisa experience deta hai. Isme aap documents likh sakte hain, unhe format kar sakte hain aur direct PDF mein download kar sakte hain.
 
